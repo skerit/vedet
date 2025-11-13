@@ -4,9 +4,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.imageio.ImageIO;
+import java.awt.Graphics2D;
 import java.awt.image.BufferedImage;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -70,6 +73,74 @@ public class AssetLoader {
             }
             return image;
         }
+    }
+
+    /**
+     * Load a single image from file system.
+     *
+     * @param filePath path to image file
+     * @return loaded image
+     * @throws IOException if loading fails
+     */
+    public static BufferedImage loadFromFile(Path filePath) throws IOException {
+        File file = filePath.toFile();
+        if (!file.exists()) {
+            throw new IOException("File not found: " + filePath);
+        }
+
+        BufferedImage originalImage = ImageIO.read(file);
+        if (originalImage == null) {
+            throw new IOException("Failed to decode image: " + filePath);
+        }
+
+        logger.debug("Loaded image from file: {} ({}x{}, type={})",
+                    filePath, originalImage.getWidth(), originalImage.getHeight(), originalImage.getType());
+
+        // Convert to TYPE_INT_ARGB if necessary to preserve transparency
+        BufferedImage image;
+        if (originalImage.getType() != BufferedImage.TYPE_INT_ARGB) {
+            logger.debug("Converting image from type {} to TYPE_INT_ARGB", originalImage.getType());
+            image = new BufferedImage(originalImage.getWidth(), originalImage.getHeight(),
+                                     BufferedImage.TYPE_INT_ARGB);
+            Graphics2D g = image.createGraphics();
+            g.drawImage(originalImage, 0, 0, null);
+            g.dispose();
+        } else {
+            image = originalImage;
+        }
+
+        return image;
+    }
+
+    /**
+     * Load bongo cat animation frames from directory.
+     * Expected files: bongo-cat-both-up.png, bongo-cat-left-down.png,
+     * bongo-cat-right-down.png, bongo-cat-both-down.png
+     *
+     * @param assetsDir directory containing PNG files
+     * @return list of loaded frames in order: [both-up, left-down, right-down, both-down]
+     * @throws IOException if loading fails
+     */
+    public static List<BufferedImage> loadBongoCatFrames(Path assetsDir) throws IOException {
+        List<BufferedImage> frames = new ArrayList<>();
+
+        String[] frameNames = {
+            "bongo-cat-both-up.png",      // Frame 0: idle (both paws up)
+            "bongo-cat-left-down.png",    // Frame 1: left paw down
+            "bongo-cat-right-down.png",   // Frame 2: right paw down
+            "bongo-cat-both-down.png"     // Frame 3: both paws down
+        };
+
+        for (String frameName : frameNames) {
+            Path framePath = assetsDir.resolve(frameName);
+            BufferedImage frame = loadFromFile(framePath);
+            frames.add(frame);
+            logger.debug("Loaded bongo cat frame: {} ({}x{})", frameName,
+                        frame.getWidth(), frame.getHeight());
+        }
+
+        logger.info("Loaded {} bongo cat frames from {}", frames.size(), assetsDir);
+        return frames;
     }
 
     /**

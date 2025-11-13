@@ -6,6 +6,7 @@ import rocks.blackblock.bongocat.config.Configuration;
 import rocks.blackblock.bongocat.platform.InputEvent;
 
 import java.awt.image.BufferedImage;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -87,7 +88,7 @@ public class AnimationEngine {
                    originalWidth, originalHeight, scaledWidth, scaledHeight);
 
         // Scale all frames
-        this.scaledFrames = new java.util.ArrayList<>();
+        this.scaledFrames = new ArrayList<>();
         boolean antiAlias = config.isEnableAntialiasing();
 
         for (int i = 0; i < frames.size(); i++) {

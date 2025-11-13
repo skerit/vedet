@@ -16,6 +16,7 @@ import rocks.blackblock.bongocat.platform.linux.LinuxPlatformService;
 
 import java.awt.image.BufferedImage;
 import java.nio.ByteBuffer;
+import java.nio.file.Path;
 import java.util.List;
 
 /**
@@ -108,8 +109,21 @@ public class Application {
 
         logger.info("Created overlay surface: {}x{}", surface.getWidth(), surface.getHeight());
 
-        // Load animation frames (use test frames for now)
-        List<BufferedImage> frames = AssetLoader.createTestFrames(200, 160, 4);
+        // Load animation frames from bongocat-c assets
+        List<BufferedImage> frames;
+        try {
+            // Try relative path first, then absolute path
+            Path assetsDir = Path.of("../bongocat-c/assets");
+            if (!assetsDir.toFile().exists()) {
+                assetsDir = Path.of("/home/skerit/projects/bongocat/bongocat-c/assets");
+            }
+            logger.debug("Loading bongo cat frames from: {}", assetsDir.toAbsolutePath());
+            frames = AssetLoader.loadBongoCatFrames(assetsDir);
+            logger.info("Loaded {} bongo cat frames", frames.size());
+        } catch (Exception e) {
+            logger.warn("Failed to load bongo cat frames, using test frames: {}", e.getMessage());
+            frames = AssetLoader.createTestFrames(200, 160, 4);
+        }
 
         // Create animation engine
         animationEngine = new AnimationEngine(frames, config);
