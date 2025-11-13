@@ -109,14 +109,10 @@ public class Application {
 
         logger.info("Created overlay surface: {}x{}", surface.getWidth(), surface.getHeight());
 
-        // Load animation frames from bongocat-c assets
+        // Load animation frames from assets directory
         List<BufferedImage> frames;
         try {
-            // Try relative path first, then absolute path
-            Path assetsDir = Path.of("../bongocat-c/assets");
-            if (!assetsDir.toFile().exists()) {
-                assetsDir = Path.of("/home/skerit/projects/bongocat/bongocat-c/assets");
-            }
+            Path assetsDir = Path.of("assets");
             logger.debug("Loading bongo cat frames from: {}", assetsDir.toAbsolutePath());
             frames = AssetLoader.loadBongoCatFrames(assetsDir);
             logger.info("Loaded {} bongo cat frames", frames.size());
