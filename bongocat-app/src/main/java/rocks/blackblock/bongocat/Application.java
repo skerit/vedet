@@ -13,6 +13,7 @@ import rocks.blackblock.bongocat.graphics.FrameRenderer;
 import rocks.blackblock.bongocat.platform.*;
 import rocks.blackblock.bongocat.platform.InputMonitor;
 import rocks.blackblock.bongocat.platform.linux.LinuxPlatformService;
+import rocks.blackblock.bongocat.platform.macos.MacOSPlatformService;
 
 import java.awt.image.BufferedImage;
 import java.nio.ByteBuffer;
@@ -45,7 +46,14 @@ public class Application {
      * Detect the current platform and return appropriate service.
      */
     private PlatformService detectPlatform() {
-        // For now, only Linux/Wayland is supported
+        // Try macOS first
+        MacOSPlatformService macosService = MacOSPlatformService.detectAndCreate();
+        if (macosService != null) {
+            logger.info("Platform detected: {}", macosService.getPlatformName());
+            return macosService;
+        }
+
+        // Try Linux/Wayland
         LinuxPlatformService linuxService = LinuxPlatformService.detectAndCreate();
         if (linuxService != null) {
             logger.info("Platform detected: {}", linuxService.getPlatformName());
@@ -53,7 +61,7 @@ public class Application {
         }
 
         throw new RuntimeException("No supported platform detected. " +
-                                 "Currently only Linux/Wayland is supported.");
+                                 "Supported platforms: macOS, Linux/Wayland");
     }
 
     /**
