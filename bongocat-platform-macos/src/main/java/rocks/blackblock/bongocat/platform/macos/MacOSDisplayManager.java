@@ -40,6 +40,9 @@ public class MacOSDisplayManager implements DisplayManager {
             nsApp = ObjC.sharedApplication();
             ObjC.sendVoid(nsApp, "setActivationPolicy:", AppKit.NSApplicationActivationPolicyProhibited);
 
+            // Finish launching NSApplication - this allows window creation
+            ObjC.sendVoid(nsApp, "finishLaunching");
+
             // Enumerate displays
             enumerateDisplays();
 
