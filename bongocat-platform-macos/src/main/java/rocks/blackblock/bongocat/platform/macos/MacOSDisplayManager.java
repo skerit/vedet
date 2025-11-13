@@ -66,7 +66,7 @@ public class MacOSDisplayManager implements DisplayManager {
         }
 
         // Get main display ID
-        int mainDisplayId = CoreGraphics.INSTANCE.CGMainDisplayID().hashCode();
+        int mainDisplayId = CoreGraphics.INSTANCE.CGMainDisplayID();
 
         // For now, we'll just use the main display
         // In a full implementation, we would iterate through all displays

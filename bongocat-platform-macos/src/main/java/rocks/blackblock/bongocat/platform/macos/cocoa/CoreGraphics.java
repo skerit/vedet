@@ -18,10 +18,10 @@ public interface CoreGraphics extends Library {
 
     // Display management
     int CGGetActiveDisplayList(int maxDisplays, IntByReference displays, IntByReference displayCount);
-    Pointer CGMainDisplayID();
+    int CGMainDisplayID();
     int CGDisplayPixelsWide(int display);
     int CGDisplayPixelsHigh(int display);
-    CGRect CGDisplayBounds(int display);
+    CGRect.ByValue CGDisplayBounds(int display);
     double CGDisplayScreenSize(int display);
 
     /**

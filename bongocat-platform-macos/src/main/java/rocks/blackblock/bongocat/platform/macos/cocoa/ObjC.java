@@ -28,7 +28,7 @@ public class ObjC {
      */
     public static Pointer send(Pointer receiver, String selectorName, Object... args) {
         Pointer selector = selector(selectorName);
-        return runtime.objc_msgSend(receiver, selector, args);
+        return runtime.msgSend(receiver, selector, args);
     }
 
     /**
@@ -36,7 +36,7 @@ public class ObjC {
      */
     public static void sendVoid(Pointer receiver, String selectorName, Object... args) {
         Pointer selector = selector(selectorName);
-        runtime.objc_msgSend_void(receiver, selector, args);
+        runtime.msgSend_void(receiver, selector, args);
     }
 
     /**
@@ -44,7 +44,7 @@ public class ObjC {
      */
     public static long sendLong(Pointer receiver, String selectorName, Object... args) {
         Pointer selector = selector(selectorName);
-        return runtime.objc_msgSend_long(receiver, selector, args);
+        return runtime.msgSend_long(receiver, selector, args);
     }
 
     /**
@@ -52,7 +52,7 @@ public class ObjC {
      */
     public static double sendDouble(Pointer receiver, String selectorName, Object... args) {
         Pointer selector = selector(selectorName);
-        return runtime.objc_msgSend_double(receiver, selector, args);
+        return runtime.msgSend_double(receiver, selector, args);
     }
 
     /**
@@ -60,7 +60,7 @@ public class ObjC {
      */
     public static boolean sendBool(Pointer receiver, String selectorName, Object... args) {
         Pointer selector = selector(selectorName);
-        return runtime.objc_msgSend_bool(receiver, selector, args);
+        return runtime.msgSend_bool(receiver, selector, args);
     }
 
     /**
@@ -91,7 +91,7 @@ public class ObjC {
     public static Pointer nsString(String str) {
         Pointer nsStringClass = getClass("NSString");
         Pointer utf8Selector = selector("stringWithUTF8String:");
-        return runtime.objc_msgSend(nsStringClass, utf8Selector, str);
+        return runtime.msgSend(nsStringClass, utf8Selector, str);
     }
 
     /**

@@ -10,6 +10,7 @@ import rocks.blackblock.bongocat.platform.PlatformException;
 import rocks.blackblock.bongocat.platform.Position;
 import rocks.blackblock.bongocat.platform.macos.cocoa.AppKit;
 import rocks.blackblock.bongocat.platform.macos.cocoa.ObjC;
+import rocks.blackblock.bongocat.platform.macos.cocoa.ObjCRuntime;
 
 import java.nio.ByteBuffer;
 
@@ -53,28 +54,26 @@ public class MacOSOverlaySurface implements OverlaySurface {
 
     private void createWindow() {
         // Calculate window position
-        int windowX = monitor.getX();
-        int windowY;
+        double windowX = monitor.getX();
+        double windowY;
         if (position == Position.TOP) {
             windowY = monitor.getY();
         } else {
             windowY = monitor.getY() + monitor.getHeight() - height;
         }
 
-        // Create NSRect for window frame
-        Pointer rectClass = ObjC.getClass("NSValue");
-        Pointer rect = ObjC.send(
-            ObjC.send(rectClass, "alloc"),
-            "initWithBytes:objCType:",
-            new double[]{windowX, windowY, width, height},
-            "{CGRect={CGPoint=dd}{CGSize=dd}}"
-        );
+        // Create NSWindow with initWithContentRect:styleMask:backing:defer:
+        // The rect is passed as 4 doubles: x, y, width, height
+        Pointer nsWindowAlloc = ObjC.alloc("NSWindow");
+        Pointer initSelector = ObjC.selector("initWithContentRect:styleMask:backing:defer:");
 
-        // Create NSWindow
-        window = ObjC.send(ObjC.alloc("NSWindow"), "initWithContentRect:styleMask:backing:defer:",
-            rect,
-            AppKit.NSWindowStyleMaskBorderless,
-            AppKit.NSBackingStoreBuffered,
+        // Use direct objc_msgSend with structure
+        window = ObjCRuntime.INSTANCE.msgSend(
+            nsWindowAlloc,
+            initSelector,
+            windowX, windowY, (double)width, (double)height,  // NSRect as 4 doubles
+            (long)AppKit.NSWindowStyleMaskBorderless,
+            (long)AppKit.NSBackingStoreBuffered,
             false
         );
 
@@ -94,15 +93,16 @@ public class MacOSOverlaySurface implements OverlaySurface {
 
     private void createImageView() {
         // Create NSImageView to display the bitmap
-        Pointer rectClass = ObjC.getClass("NSValue");
-        Pointer rect = ObjC.send(
-            ObjC.send(rectClass, "alloc"),
-            "initWithBytes:objCType:",
-            new double[]{0, 0, width, height},
-            "{CGRect={CGPoint=dd}{CGSize=dd}}"
+        Pointer nsImageViewAlloc = ObjC.alloc("NSImageView");
+        Pointer initFrameSelector = ObjC.selector("initWithFrame:");
+
+        // Pass the frame as 4 doubles: x, y, width, height
+        imageView = ObjCRuntime.INSTANCE.msgSend(
+            nsImageViewAlloc,
+            initFrameSelector,
+            0.0, 0.0, (double)width, (double)height
         );
 
-        imageView = ObjC.send(ObjC.alloc("NSImageView"), "initWithFrame:", rect);
         ObjC.sendVoid(window, "setContentView:", imageView);
 
         logger.debug("Created NSImageView");
