@@ -9,6 +9,7 @@ import rocks.blackblock.bongocat.platform.OverlaySurface;
 import rocks.blackblock.bongocat.platform.PlatformException;
 import rocks.blackblock.bongocat.platform.Position;
 import rocks.blackblock.bongocat.platform.macos.cocoa.AppKit;
+import rocks.blackblock.bongocat.platform.macos.cocoa.CoreGraphics;
 import rocks.blackblock.bongocat.platform.macos.cocoa.ObjC;
 import rocks.blackblock.bongocat.platform.macos.cocoa.ObjCRuntime;
 
@@ -65,18 +66,24 @@ public class MacOSOverlaySurface implements OverlaySurface {
             windowY = monitor.getY() + monitor.getHeight() - height;
         }
 
+        // Create NSRect structure
+        CoreGraphics.CGRect.ByValue rect = new CoreGraphics.CGRect.ByValue();
+        rect.x = windowX;
+        rect.y = windowY;
+        rect.width = width;
+        rect.height = height;
+
         // Create NSWindow with initWithContentRect:styleMask:backing:defer:
-        // The rect is passed as 4 doubles: x, y, width, height
         Pointer nsWindowAlloc = ObjC.alloc("NSWindow");
         Pointer initSelector = ObjC.selector("initWithContentRect:styleMask:backing:defer:");
 
-        // Use direct objc_msgSend with structure
+        // Use low-level msgSend with structure by value
         window = ObjCRuntime.INSTANCE.msgSend(
             nsWindowAlloc,
             initSelector,
-            windowX, windowY, (double)width, (double)height,  // NSRect as 4 doubles
-            (long)AppKit.NSWindowStyleMaskBorderless,
-            (long)AppKit.NSBackingStoreBuffered,
+            rect,
+            AppKit.NSWindowStyleMaskBorderless,
+            AppKit.NSBackingStoreBuffered,
             false
         );
 
@@ -95,16 +102,18 @@ public class MacOSOverlaySurface implements OverlaySurface {
     }
 
     private void createImageView() {
-        // Create NSImageView to display the bitmap
-        Pointer nsImageViewAlloc = ObjC.alloc("NSImageView");
-        Pointer initFrameSelector = ObjC.selector("initWithFrame:");
+        // Create frame rect structure
+        CoreGraphics.CGRect.ByValue frame = new CoreGraphics.CGRect.ByValue();
+        frame.x = 0;
+        frame.y = 0;
+        frame.width = width;
+        frame.height = height;
 
-        // Pass the frame as 4 doubles: x, y, width, height
-        imageView = ObjCRuntime.INSTANCE.msgSend(
-            nsImageViewAlloc,
-            initFrameSelector,
-            0.0, 0.0, (double)width, (double)height
-        );
+        // Create NSImageView
+        Pointer nsImageViewAlloc = ObjC.alloc("NSImageView");
+        Pointer initSelector = ObjC.selector("initWithFrame:");
+
+        imageView = ObjCRuntime.INSTANCE.msgSend(nsImageViewAlloc, initSelector, frame);
 
         ObjC.sendVoid(window, "setContentView:", imageView);
 
