@@ -44,6 +44,9 @@ public class MacOSOverlaySurface implements OverlaySurface {
                 width, height, position, monitor.getName());
 
         try {
+            // All AppKit operations must run on the main thread
+            // Since we're already on the main thread (Java main), we can call directly
+            // NSApplication.finishLaunching was called in MacOSDisplayManager
             createWindow();
             createImageView();
             allocatePixelBuffer();
@@ -173,6 +176,11 @@ public class MacOSOverlaySurface implements OverlaySurface {
             // Reset buffer position for reading
             pixelBuffer.rewind();
 
+            // Copy pixel data out of the buffer
+            byte[] pixels = new byte[width * height * 4];
+            pixelBuffer.get(pixels);
+            pixelBuffer.rewind();
+
             // Create NSBitmapImageRep from pixel buffer
             Pointer bitmapClass = ObjC.getClass("NSBitmapImageRep");
             Pointer newBitmap = ObjC.send(
@@ -192,10 +200,6 @@ public class MacOSOverlaySurface implements OverlaySurface {
             );
 
             // Copy pixel data
-            byte[] pixels = new byte[width * height * 4];
-            pixelBuffer.get(pixels);
-            pixelBuffer.rewind();
-
             Pointer bitmapData = ObjC.send(newBitmap, "bitmapData");
             if (bitmapData != null) {
                 bitmapData.write(0, pixels, 0, pixels.length);
@@ -255,11 +259,12 @@ public class MacOSOverlaySurface implements OverlaySurface {
             hide();
             ObjC.sendVoid(window, "close");
             ObjC.sendVoid(window, "release");
-            window = null;
-        }
 
-        if (bitmap != null) {
-            ObjC.sendVoid(bitmap, "release");
+            if (bitmap != null) {
+                ObjC.sendVoid(bitmap, "release");
+            }
+
+            window = null;
             bitmap = null;
         }
 
