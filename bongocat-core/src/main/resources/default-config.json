@@ -1,0 +1,27 @@
+{
+  "monitor_name": null,
+  "overlay_height": 100,
+  "overlay_position": "top",
+  "overlay_opacity": 255,
+  "layer": "overlay",
+  "cat_height": 80,
+  "cat_x_offset": 0,
+  "cat_y_offset": 0,
+  "cat_align": "center",
+  "mirror_horizontal": false,
+  "mirror_vertical": false,
+  "idle_frame": 0,
+  "keypress_duration_ms": 100,
+  "fps": 60,
+  "enable_antialiasing": true,
+  "keyboard_devices": [
+    "/dev/input/event3"
+  ],
+  "test_animation_duration_ms": 0,
+  "test_animation_interval_ms": 0,
+  "enable_scheduled_sleep": false,
+  "sleep_begin": "00:00",
+  "sleep_end": "06:00",
+  "idle_sleep_timeout_sec": 0,
+  "debug": false
+}

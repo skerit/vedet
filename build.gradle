@@ -1,0 +1,33 @@
+group = 'rocks.blackblock'
+version = '1.0-SNAPSHOT'
+
+subprojects {
+    apply plugin: 'java'
+    apply plugin: 'java-library'
+
+    group = 'rocks.blackblock'
+    version = '1.0-SNAPSHOT'
+
+    sourceCompatibility = JavaVersion.VERSION_22
+    targetCompatibility = JavaVersion.VERSION_22
+
+    repositories {
+        mavenCentral()
+    }
+
+    dependencies {
+        // Common test dependencies for all modules
+        testImplementation platform('org.junit:junit-bom:5.10.0')
+        testImplementation 'org.junit.jupiter:junit-jupiter'
+        testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+    }
+
+    test {
+        useJUnitPlatform()
+    }
+
+    java {
+        withSourcesJar()
+        withJavadocJar()
+    }
+}

@@ -1,0 +1,53 @@
+// Main application assembly
+
+plugins {
+    id 'application'
+}
+
+application {
+    mainClass = 'rocks.blackblock.bongocat.Application'
+}
+
+// Configure run task to set java.library.path for native libraries
+run {
+    def nativeLibDir = file('../bongocat-platform-linux/src/main/resources/native/linux-x86-64')
+    systemProperty 'java.library.path', nativeLibDir.absolutePath
+}
+
+dependencies {
+    // Core modules
+    implementation project(':bongocat-core')
+    implementation project(':bongocat-platform-api')
+    implementation project(':bongocat-platform-linux')
+
+    // CLI parsing
+    implementation 'info.picocli:picocli:4.7.5'
+    annotationProcessor 'info.picocli:picocli-codegen:4.7.5'
+
+    // Logging implementation
+    implementation 'org.slf4j:slf4j-api:2.0.11'
+    implementation 'ch.qos.logback:logback-classic:1.4.14'
+}
+
+jar {
+    manifest {
+        attributes(
+            'Main-Class': 'rocks.blackblock.bongocat.Application',
+            'Implementation-Title': 'Bongo Cat',
+            'Implementation-Version': project.version
+        )
+    }
+}
+
+// Create a fat JAR with all dependencies
+task fatJar(type: Jar) {
+    archiveClassifier = 'all'
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    manifest {
+        attributes 'Main-Class': 'rocks.blackblock.bongocat.Application'
+    }
+    from {
+        configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
+    }
+    with jar
+}

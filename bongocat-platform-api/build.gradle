@@ -1,0 +1,5 @@
+// Platform abstraction API - defines interfaces for platform-specific implementations
+
+dependencies {
+    // No external dependencies - just pure Java interfaces
+}
