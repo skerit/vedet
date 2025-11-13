@@ -138,7 +138,7 @@ public class MacOSDisplayManager implements DisplayManager {
                 true
             );
 
-            if (event != null && event.peer != 0) {
+            if (event != null && Pointer.nativeValue(event) != 0) {
                 ObjC.sendVoid(nsApp, "sendEvent:", event);
                 return true;
             }

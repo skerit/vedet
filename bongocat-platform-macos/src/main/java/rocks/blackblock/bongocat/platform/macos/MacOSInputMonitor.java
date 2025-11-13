@@ -1,6 +1,5 @@
 package rocks.blackblock.bongocat.platform.macos;
 
-import com.sun.jna.Callback;
 import com.sun.jna.Pointer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -44,7 +43,7 @@ public class MacOSInputMonitor implements InputMonitor {
                 CoreGraphics.kCGEventKeyUp
             );
 
-            EventTapCallback callback = this::handleCGEvent;
+            CoreGraphics.CGEventTapCallBack callback = this::handleCGEvent;
 
             eventTap = CoreGraphics.INSTANCE.CGEventTapCreate(
                 CoreGraphics.kCGSessionEventTap,
@@ -55,7 +54,7 @@ public class MacOSInputMonitor implements InputMonitor {
                 Pointer.NULL
             );
 
-            if (eventTap == null || eventTap.peer == 0) {
+            if (eventTap == null || Pointer.nativeValue(eventTap) == 0) {
                 throw new PlatformException("Failed to create event tap. " +
                     "You may need to grant accessibility permissions to this application.");
             }
@@ -67,7 +66,7 @@ public class MacOSInputMonitor implements InputMonitor {
                 0
             );
 
-            if (runLoopSource == null || runLoopSource.peer == 0) {
+            if (runLoopSource == null || Pointer.nativeValue(runLoopSource) == 0) {
                 throw new PlatformException("Failed to create run loop source");
             }
 
@@ -84,13 +83,6 @@ public class MacOSInputMonitor implements InputMonitor {
             cleanup();
             throw new PlatformException("Failed to start input monitor", e);
         }
-    }
-
-    /**
-     * Callback interface for CGEventTap
-     */
-    interface EventTapCallback extends Callback {
-        Pointer callback(Pointer proxy, int type, Pointer event, Pointer refcon);
     }
 
     /**
@@ -171,7 +163,7 @@ public class MacOSInputMonitor implements InputMonitor {
         // Stop run loop
         if (runLoopThread != null && runLoopThread.isAlive()) {
             Pointer runLoop = CoreGraphics.INSTANCE.CFRunLoopGetCurrent();
-            if (runLoop != null && runLoop.peer != 0) {
+            if (runLoop != null && Pointer.nativeValue(runLoop) != 0) {
                 CoreGraphics.INSTANCE.CFRunLoopStop(runLoop);
             }
 
@@ -188,12 +180,12 @@ public class MacOSInputMonitor implements InputMonitor {
     }
 
     private void cleanup() {
-        if (runLoopSource != null && runLoopSource.peer != 0) {
+        if (runLoopSource != null && Pointer.nativeValue(runLoopSource) != 0) {
             // CFRelease(runLoopSource) would go here if we had the binding
             runLoopSource = null;
         }
 
-        if (eventTap != null && eventTap.peer != 0) {
+        if (eventTap != null && Pointer.nativeValue(eventTap) != 0) {
             // CFRelease(eventTap) would go here if we had the binding
             eventTap = null;
         }

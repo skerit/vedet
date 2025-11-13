@@ -24,13 +24,20 @@ public interface CoreGraphics extends Library {
     CGRect CGDisplayBounds(int display);
     double CGDisplayScreenSize(int display);
 
+    /**
+     * Callback interface for CGEventTap
+     */
+    interface CGEventTapCallBack extends com.sun.jna.Callback {
+        Pointer callback(Pointer proxy, int type, Pointer event, Pointer refcon);
+    }
+
     // Event tap management
     Pointer CGEventTapCreate(
         int tap,
         int place,
         int options,
         long eventsOfInterest,
-        Pointer callback,
+        CGEventTapCallBack callback,
         Pointer refcon
     );
     void CFRunLoopAddSource(Pointer rl, Pointer source, Pointer mode);
