@@ -9,9 +9,9 @@ import rocks.blackblock.bongocat.platform.OverlaySurface;
 import rocks.blackblock.bongocat.platform.PlatformException;
 import rocks.blackblock.bongocat.platform.Position;
 import rocks.blackblock.bongocat.platform.macos.cocoa.AppKit;
+import rocks.blackblock.bongocat.platform.macos.cocoa.CocoaJNI;
 import rocks.blackblock.bongocat.platform.macos.cocoa.CoreGraphics;
 import rocks.blackblock.bongocat.platform.macos.cocoa.ObjC;
-import rocks.blackblock.bongocat.platform.macos.cocoa.ObjCRuntime;
 
 import java.nio.ByteBuffer;
 
@@ -66,56 +66,29 @@ public class MacOSOverlaySurface implements OverlaySurface {
             windowY = monitor.getY() + monitor.getHeight() - height;
         }
 
-        // Create NSRect structure
-        CoreGraphics.CGRect.ByValue rect = new CoreGraphics.CGRect.ByValue();
-        rect.x = windowX;
-        rect.y = windowY;
-        rect.width = width;
-        rect.height = height;
-
-        // Create NSWindow with initWithContentRect:styleMask:backing:defer:
-        Pointer nsWindowAlloc = ObjC.alloc("NSWindow");
-        Pointer initSelector = ObjC.selector("initWithContentRect:styleMask:backing:defer:");
-
-        // Use low-level msgSend with structure by value
-        window = ObjCRuntime.INSTANCE.msgSend(
-            nsWindowAlloc,
-            initSelector,
-            rect,
+        // Use native wrapper to create NSWindow (avoids JNA structure-by-value issue)
+        window = CocoaJNI.INSTANCE.create_nswindow(
+            windowX,
+            windowY,
+            width,
+            height,
             AppKit.NSWindowStyleMaskBorderless,
             AppKit.NSBackingStoreBuffered,
             false
         );
 
-        // Configure window properties
-        ObjC.sendVoid(window, "setOpaque:", false);
-        ObjC.sendVoid(window, "setBackgroundColor:",
-            ObjC.send(ObjC.getClass("NSColor"), "clearColor"));
-        ObjC.sendVoid(window, "setIgnoresMouseEvents:", true);
-        ObjC.sendVoid(window, "setLevel:", (long) AppKit.NSFloatingWindowLevel);
-        ObjC.sendVoid(window, "setCollectionBehavior:",
-            AppKit.NSWindowCollectionBehaviorCanJoinAllSpaces |
-            AppKit.NSWindowCollectionBehaviorStationary |
-            AppKit.NSWindowCollectionBehaviorIgnoresCycle);
+        // Configure window using native wrapper (avoids JNA objc_msgSend issues)
+        CocoaJNI.INSTANCE.configure_overlay_window(window, AppKit.NSFloatingWindowLevel);
 
         logger.debug("Created NSWindow at ({}, {}) with size {}x{}", windowX, windowY, width, height);
     }
 
     private void createImageView() {
-        // Create frame rect structure
-        CoreGraphics.CGRect.ByValue frame = new CoreGraphics.CGRect.ByValue();
-        frame.x = 0;
-        frame.y = 0;
-        frame.width = width;
-        frame.height = height;
+        // Use native wrapper to create NSImageView (avoids JNA structure-by-value issue)
+        imageView = CocoaJNI.INSTANCE.create_nsimageview(0, 0, width, height);
 
-        // Create NSImageView
-        Pointer nsImageViewAlloc = ObjC.alloc("NSImageView");
-        Pointer initSelector = ObjC.selector("initWithFrame:");
-
-        imageView = ObjCRuntime.INSTANCE.msgSend(nsImageViewAlloc, initSelector, frame);
-
-        ObjC.sendVoid(window, "setContentView:", imageView);
+        // Use native wrapper to set content view (avoids JNA objc_msgSend issues)
+        CocoaJNI.INSTANCE.set_content_view(window, imageView);
 
         logger.debug("Created NSImageView");
     }
@@ -233,7 +206,7 @@ public class MacOSOverlaySurface implements OverlaySurface {
     @Override
     public void show() {
         if (!visible) {
-            ObjC.sendVoid(window, "makeKeyAndOrderFront:", Pointer.NULL);
+            CocoaJNI.INSTANCE.show_window(window);
             visible = true;
             logger.debug("Showing overlay window");
         }
@@ -242,7 +215,7 @@ public class MacOSOverlaySurface implements OverlaySurface {
     @Override
     public void hide() {
         if (visible) {
-            ObjC.sendVoid(window, "orderOut:", Pointer.NULL);
+            CocoaJNI.INSTANCE.hide_window(window);
             visible = false;
             logger.debug("Hiding overlay window");
         }
@@ -266,11 +239,10 @@ public class MacOSOverlaySurface implements OverlaySurface {
 
         if (window != null) {
             hide();
-            ObjC.sendVoid(window, "close");
-            ObjC.sendVoid(window, "release");
+            CocoaJNI.INSTANCE.close_window(window);
 
             if (bitmap != null) {
-                ObjC.sendVoid(bitmap, "release");
+                CocoaJNI.INSTANCE.release_object(bitmap);
             }
 
             window = null;

@@ -113,43 +113,17 @@ public class MacOSDisplayManager implements DisplayManager {
 
     @Override
     public boolean processEvents(int timeoutMs) throws PlatformException {
+        // TODO: Implement proper event processing using native wrappers
+        // For now, we don't need event processing since our overlay ignores mouse events
+        // and we handle keyboard input separately via MacOSInputMonitor
         try {
-            // Process pending NSApplication events
-            Pointer untilDate;
-            if (timeoutMs == 0) {
-                // Don't wait, process what's available
-                untilDate = ObjC.send(ObjC.getClass("NSDate"), "distantPast");
-            } else if (timeoutMs < 0) {
-                // Wait indefinitely
-                untilDate = ObjC.send(ObjC.getClass("NSDate"), "distantFuture");
-            } else {
-                // Wait for specified time
-                double interval = timeoutMs / 1000.0;
-                untilDate = ObjC.send(
-                    ObjC.send(ObjC.getClass("NSDate"), "alloc"),
-                    "initWithTimeIntervalSinceNow:",
-                    interval
-                );
+            if (timeoutMs > 0) {
+                Thread.sleep(timeoutMs);
             }
-
-            Pointer event = ObjC.send(
-                nsApp,
-                "nextEventMatchingMask:untilDate:inMode:dequeue:",
-                -1L,  // NSEventMaskAny
-                untilDate,
-                ObjC.nsString("kCFRunLoopDefaultMode"),
-                true
-            );
-
-            if (event != null && Pointer.nativeValue(event) != 0) {
-                ObjC.sendVoid(nsApp, "sendEvent:", event);
-                return true;
-            }
-
             return false;
-
-        } catch (Exception e) {
-            throw new PlatformException("Failed to process events", e);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            return false;
         }
     }
 

@@ -28,7 +28,7 @@ public class ObjC {
      */
     public static Pointer send(Pointer receiver, String selectorName, Object... args) {
         Pointer selector = selector(selectorName);
-        return runtime.msgSend(receiver, selector, args);
+        return runtime.objc_msgSend(receiver, selector, args);
     }
 
     /**
@@ -36,7 +36,7 @@ public class ObjC {
      */
     public static void sendVoid(Pointer receiver, String selectorName, Object... args) {
         Pointer selector = selector(selectorName);
-        runtime.msgSend_void(receiver, selector, args);
+        runtime.objc_msgSend(receiver, selector, args);
     }
 
     /**
@@ -44,7 +44,9 @@ public class ObjC {
      */
     public static long sendLong(Pointer receiver, String selectorName, Object... args) {
         Pointer selector = selector(selectorName);
-        return runtime.msgSend_long(receiver, selector, args);
+        // Use msgSend and get value from pointer
+        Pointer result = runtime.objc_msgSend(receiver, selector, args);
+        return Pointer.nativeValue(result);
     }
 
     /**
@@ -52,7 +54,9 @@ public class ObjC {
      */
     public static double sendDouble(Pointer receiver, String selectorName, Object... args) {
         Pointer selector = selector(selectorName);
-        return runtime.msgSend_double(receiver, selector, args);
+        // Use msgSend and interpret as double
+        Pointer result = runtime.objc_msgSend(receiver, selector, args);
+        return Double.longBitsToDouble(Pointer.nativeValue(result));
     }
 
     /**
@@ -60,7 +64,9 @@ public class ObjC {
      */
     public static boolean sendBool(Pointer receiver, String selectorName, Object... args) {
         Pointer selector = selector(selectorName);
-        return runtime.msgSend_bool(receiver, selector, args);
+        // Use msgSend and check if result is non-zero
+        Pointer result = runtime.objc_msgSend(receiver, selector, args);
+        return Pointer.nativeValue(result) != 0;
     }
 
     /**
@@ -91,7 +97,7 @@ public class ObjC {
     public static Pointer nsString(String str) {
         Pointer nsStringClass = getClass("NSString");
         Pointer utf8Selector = selector("stringWithUTF8String:");
-        return runtime.msgSend(nsStringClass, utf8Selector, str);
+        return runtime.objc_msgSend(nsStringClass, utf8Selector, str);
     }
 
     /**
