@@ -172,6 +172,71 @@ void close_window(void *window) {
 }
 
 /**
+ * Create an NSBitmapImageRep from pixel data and set it to an NSImageView.
+ *
+ * This function handles the entire rendering pipeline:
+ * 1. Creates NSBitmapImageRep from ARGB pixel data
+ * 2. Creates NSImage and adds the bitmap representation
+ * 3. Sets the image to the NSImageView
+ * 4. Releases the old bitmap if provided
+ *
+ * @param imageView The NSImageView to update
+ * @param pixels Pointer to pixel data (ARGB8888 format)
+ * @param width Image width
+ * @param height Image height
+ * @param oldBitmap Previous bitmap to release (can be NULL)
+ * @return The new NSBitmapImageRep (caller should save for next call)
+ */
+void* render_pixels_to_imageview(
+    void *imageView,
+    void *pixels,
+    int width,
+    int height,
+    void *oldBitmap
+) {
+    NSImageView *nsImageView = (NSImageView*)imageView;
+
+    // Create NSBitmapImageRep with the pixel data
+    NSBitmapImageRep *bitmapRep = [[NSBitmapImageRep alloc]
+        initWithBitmapDataPlanes:NULL  // Let Cocoa allocate
+        pixelsWide:width
+        pixelsHigh:height
+        bitsPerSample:8
+        samplesPerPixel:4
+        hasAlpha:YES
+        isPlanar:NO
+        colorSpaceName:NSDeviceRGBColorSpace
+        bitmapFormat:NSBitmapFormatAlphaFirst
+        bytesPerRow:width * 4
+        bitsPerPixel:32];
+
+    // Copy pixel data to the bitmap
+    unsigned char *bitmapData = [bitmapRep bitmapData];
+    if (bitmapData && pixels) {
+        memcpy(bitmapData, pixels, width * height * 4);
+    }
+
+    // Create NSImage and add the representation
+    NSImage *image = [[NSImage alloc] init];
+    [image addRepresentation:bitmapRep];
+
+    // Set the image to the image view
+    [nsImageView setImage:image];
+
+    // Release the image (imageView retains it)
+    [image release];
+
+    // Release old bitmap if provided
+    if (oldBitmap) {
+        NSBitmapImageRep *oldRep = (NSBitmapImageRep*)oldBitmap;
+        [oldRep release];
+    }
+
+    // Return the new bitmap (caller should save it for next frame)
+    return (void*)bitmapRep;
+}
+
+/**
  * Release a Cocoa object.
  *
  * @param obj The object to release

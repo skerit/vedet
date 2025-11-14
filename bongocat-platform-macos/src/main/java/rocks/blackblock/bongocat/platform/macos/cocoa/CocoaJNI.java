@@ -116,6 +116,30 @@ public interface CocoaJNI extends Library {
     void close_window(Pointer window);
 
     /**
+     * Render pixel data to an NSImageView.
+     *
+     * This handles the complete rendering pipeline:
+     * - Creates NSBitmapImageRep from pixel data
+     * - Creates NSImage and adds the representation
+     * - Sets the image to the NSImageView
+     * - Releases the old bitmap
+     *
+     * @param imageView The NSImageView to render to
+     * @param pixels Pointer to pixel data (ARGB8888 format)
+     * @param width Image width
+     * @param height Image height
+     * @param oldBitmap Previous bitmap to release (can be null)
+     * @return New NSBitmapImageRep pointer to pass on next call
+     */
+    Pointer render_pixels_to_imageview(
+        Pointer imageView,
+        Pointer pixels,
+        int width,
+        int height,
+        Pointer oldBitmap
+    );
+
+    /**
      * Release a Cocoa object.
      *
      * @param obj The object to release

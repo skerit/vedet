@@ -163,40 +163,19 @@ public class MacOSOverlaySurface implements OverlaySurface {
             pixelBuffer.get(pixels);
             pixelBuffer.rewind();
 
-            // Create NSBitmapImageRep from pixel buffer
-            Pointer bitmapClass = ObjC.getClass("NSBitmapImageRep");
-            Pointer newBitmap = ObjC.send(
-                ObjC.send(bitmapClass, "alloc"),
-                "initWithBitmapDataPlanes:pixelsWide:pixelsHigh:bitsPerSample:samplesPerPixel:hasAlpha:isPlanar:colorSpaceName:bitmapFormat:bytesPerRow:bitsPerPixel:",
-                null,  // Let Cocoa allocate the buffer
+            // Create a JNA Memory object to pass pixels to native code
+            Memory pixelMemory = new Memory(pixels.length);
+            pixelMemory.write(0, pixels, 0, pixels.length);
+
+            // Use native wrapper to render pixels (avoids all objc_msgSend issues)
+            // This handles: NSBitmapImageRep creation, NSImage creation, setting to imageView
+            bitmap = CocoaJNI.INSTANCE.render_pixels_to_imageview(
+                imageView,
+                pixelMemory,
                 width,
                 height,
-                8,     // bits per sample
-                4,     // samples per pixel (ARGB)
-                true,  // has alpha
-                false, // not planar
-                ObjC.nsString("NSDeviceRGBColorSpace"),
-                1,     // NSAlphaPremultipliedFirstBitmapFormat
-                width * 4,  // bytes per row
-                32     // bits per pixel
+                bitmap  // Pass previous bitmap to be released
             );
-
-            // Copy pixel data
-            Pointer bitmapData = ObjC.send(newBitmap, "bitmapData");
-            if (bitmapData != null) {
-                bitmapData.write(0, pixels, 0, pixels.length);
-            }
-
-            // Create NSImage and set it to the image view
-            Pointer image = ObjC.send(ObjC.alloc("NSImage"), "init");
-            ObjC.sendVoid(image, "addRepresentation:", newBitmap);
-            ObjC.sendVoid(imageView, "setImage:", image);
-
-            // Release old bitmap if it exists
-            if (bitmap != null) {
-                ObjC.sendVoid(bitmap, "release");
-            }
-            bitmap = newBitmap;
 
         } catch (Exception e) {
             throw new PlatformException("Failed to commit pixel buffer", e);
