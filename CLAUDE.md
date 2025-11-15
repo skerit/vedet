@@ -66,18 +66,34 @@ bongocat-java/
 │           ├── OverlaySurface.java   # Transparent overlay surface
 │           └── PlatformService.java  # Platform detection
 │
-└── bongocat-platform-linux/ # Linux/Wayland implementation
-    ├── native/                       # C helper libraries
-    │   ├── wayland-protocols-jni.c   # Wayland protocol bindings
-    │   └── build.sh                  # Native library build script
+├── bongocat-platform-linux/ # Linux/Wayland implementation
+│   ├── native/                       # C helper libraries
+│   │   ├── wayland-protocols-jni.c   # Wayland protocol bindings
+│   │   └── build.sh                  # Native library build script
+│   └── src/main/java/
+│       └── rocks/blackblock/bongocat/platform/linux/
+│           ├── wayland/              # Wayland JNA bindings
+│           ├── evdev/                # Linux input device bindings
+│           ├── LinuxDisplayManager.java
+│           ├── LinuxInputMonitor.java
+│           ├── LinuxOverlaySurface.java
+│           └── NativeMemory.java     # Shared memory management
+│
+└── bongocat-platform-macos/ # macOS implementation
     └── src/main/java/
-        └── rocks/blackblock/bongocat/platform/linux/
-            ├── wayland/              # Wayland JNA bindings
-            ├── evdev/                # Linux input device bindings
-            ├── LinuxDisplayManager.java
-            ├── LinuxInputMonitor.java
-            ├── LinuxOverlaySurface.java
-            └── NativeMemory.java     # Shared memory management
+        └── rocks/blackblock/bongocat/platform/macos/
+            ├── cocoa/                # JNA bindings for Cocoa/AppKit
+            │   ├── Foundation.java   # Core Foundation bindings
+            │   ├── ObjCRuntime.java  # Objective-C runtime
+            │   ├── ObjC.java         # Helper for ObjC messaging
+            │   ├── AppKit.java       # AppKit constants
+            │   └── CoreGraphics.java # Display and event APIs
+            ├── MacOSDisplayManager.java
+            ├── MacOSInputMonitor.java
+            ├── MacOSOverlaySurface.java
+            ├── MacOSMonitor.java
+            ├── MacOSInputEvent.java
+            └── MacOSPlatformService.java
 ```
 
 ## Architecture Overview
@@ -88,8 +104,9 @@ The codebase uses a clean platform abstraction pattern:
 - `PlatformService` interface defines platform detection and factory methods
 - `DisplayManager`, `InputMonitor`, `OverlaySurface` are platform-agnostic interfaces
 - Linux/Wayland implementation in `bongocat-platform-linux` module
+- macOS implementation in `bongocat-platform-macos` module
 
-This design allows for future macOS or Windows implementations without changing core logic.
+This design allows for future Windows implementations without changing core logic.
 
 ### Wayland Integration
 
@@ -126,6 +143,47 @@ This design allows for future macOS or Windows implementations without changing 
 - Left-hand keys (Q, W, E, A, S, D, etc.) -> left paw down
 - Right-hand keys (U, I, O, P, J, K, L, etc.) -> right paw down
 - Both hands -> both paws down
+
+### macOS Integration
+
+**Transparent Overlay Window**:
+- Uses NSWindow with `NSWindowStyleMaskBorderless` for frameless window
+- Transparent background via `[NSColor clearColor]`
+- `setIgnoresMouseEvents:` to allow clicks to pass through
+- Window level controls layering (NSFloatingWindowLevel or NSScreenSaverWindowLevel)
+- Collection behaviors: appears on all spaces, stationary, ignores window cycling
+
+**JNA Bindings via Objective-C Runtime**:
+- `ObjCRuntime.java` - Low-level Objective-C runtime messaging
+- `ObjC.java` - High-level helper for Objective-C method calls
+- `Foundation.java` - Core Foundation framework bindings
+- `AppKit.java` - AppKit framework constants (window styles, levels, behaviors)
+- `CoreGraphics.java` - Display enumeration and CGEventTap for input monitoring
+
+**Keyboard Input Monitoring**:
+- Uses CGEventTap to create passive event tap for global keyboard monitoring
+- Monitors `kCGEventKeyDown` and `kCGEventKeyUp` events
+- Runs in separate thread with Core Foundation run loop
+- **Requires Accessibility permissions**: User must grant permission in System Settings
+- Key mapping based on macOS keycodes (US keyboard layout)
+
+**Display Management**:
+- `CGGetActiveDisplayList` - Enumerate active displays
+- `CGDisplayBounds` - Get display size and position
+- `CGMainDisplayID` - Identify primary display
+- Currently implements single-display support
+
+**Pixel Buffer Rendering**:
+- ARGB8888 format (same as Linux)
+- ByteBuffer converted to NSBitmapImageRep
+- NSImage displayed in NSImageView as window content
+- Alpha channel properly preserved for transparency
+
+**Key Differences from Linux**:
+- No native library compilation needed (pure JNA to system frameworks)
+- Event loop uses NSApplication event processing instead of Wayland dispatch
+- Requires Accessibility permissions for keyboard monitoring
+- Window management simpler (no protocol negotiation)
 
 ### Animation System
 
@@ -209,10 +267,10 @@ PollFd[] pollFds = (PollFd[]) pollFd.toArray(size);
 
 ### Currently Supported
 - ✅ **Linux/Wayland** - Tested on KDE Plasma, should work on Sway, Hyprland, Wayfire
+- ✅ **macOS** - Uses Cocoa/AppKit for overlay windows and CGEventTap for input monitoring (requires Accessibility permissions)
 
 ### Not Supported
 - ❌ **Linux/X11** - Would require different overlay mechanism (XShape extension)
-- ❌ **macOS** - Would need Objective-C bridges and native window APIs
 - ❌ **Windows** - Would need Win32 API for overlay windows
 - ❌ **GNOME Wayland** - Lacks wlr-layer-shell protocol support
 
@@ -261,10 +319,22 @@ WAYLAND_DEBUG=1 ./run.sh 2>&1 | grep -E "error|wl_shm"
 - Check alpha channel is preserved during scaling
 - Verify buffer format is ARGB8888
 
-**Input monitoring fails**:
+**Input monitoring fails (Linux)**:
 - User must be in `input` group
 - Check `/dev/input/eventX` permissions
 - Use `./bongocat-c/scripts/find_input_devices.sh` to identify keyboards
+
+**Input monitoring fails (macOS)**:
+- Grant Accessibility permissions: System Settings → Privacy & Security → Accessibility
+- Add and enable your terminal application or the Bongo Cat JAR
+- Restart application after granting permissions
+- Check logs for "Failed to create event tap" error
+
+**Overlay not visible (macOS)**:
+- Verify window creation in logs
+- Check display detection succeeded
+- Try adjusting window level in MacOSOverlaySurface
+- Ensure show() is called after surface creation
 
 ## Configuration
 
@@ -306,8 +376,11 @@ LD_DEBUG=libs ./run.sh 2>&1 | grep wayland
 - [ ] Multi-monitor support with monitor selection
 - [ ] Configuration file support with hot-reload
 - [ ] Custom asset loading
-- [ ] macOS platform implementation
-- [ ] Fullscreen detection using foreign-toplevel protocol
+- [x] macOS platform implementation (completed)
+- [ ] Fullscreen detection using foreign-toplevel protocol (Linux) / CGWindowListCopyWindowInfo (macOS)
+- [ ] HiDPI/Retina display support for macOS
+- [ ] International keyboard layout support for macOS
+- [ ] Windows platform implementation
 - [ ] Packaging as native executable with GraalVM
 
 ## Warning

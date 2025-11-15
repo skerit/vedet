@@ -12,6 +12,11 @@ application {
 run {
     def nativeLibDir = file('../bongocat-platform-linux/src/main/resources/native/linux-x86-64')
     systemProperty 'java.library.path', nativeLibDir.absolutePath
+
+    // On macOS, use -XstartOnFirstThread so Java's main thread is recognized as Cocoa's main thread
+    if (org.gradle.internal.os.OperatingSystem.current().isMacOsX()) {
+        jvmArgs '-XstartOnFirstThread'
+    }
 }
 
 dependencies {
@@ -19,6 +24,7 @@ dependencies {
     implementation project(':bongocat-core')
     implementation project(':bongocat-platform-api')
     implementation project(':bongocat-platform-linux')
+    implementation project(':bongocat-platform-macos')
 
     // CLI parsing
     implementation 'info.picocli:picocli:4.7.5'

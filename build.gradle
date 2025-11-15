@@ -8,8 +8,8 @@ subprojects {
     group = 'rocks.blackblock'
     version = '1.0-SNAPSHOT'
 
-    sourceCompatibility = JavaVersion.VERSION_22
-    targetCompatibility = JavaVersion.VERSION_22
+    sourceCompatibility = JavaVersion.VERSION_21
+    targetCompatibility = JavaVersion.VERSION_21
 
     repositories {
         mavenCentral()

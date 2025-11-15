@@ -1,0 +1,14 @@
+// macOS platform implementation using Cocoa/AppKit and Core Graphics
+
+dependencies {
+    // Platform API
+    api project(':bongocat-platform-api')
+    implementation project(':bongocat-core')
+
+    // JNA for native bindings
+    implementation 'net.java.dev.jna:jna:5.14.0'
+    implementation 'net.java.dev.jna:jna-platform:5.14.0'
+
+    // Logging
+    implementation 'org.slf4j:slf4j-api:2.0.11'
+}
