@@ -147,6 +147,15 @@ public interface CocoaJNI extends Library {
     void release_object(Pointer obj);
 
     /**
+     * Process pending NSApplication events.
+     * This pumps the event loop so windows are actually displayed.
+     *
+     * @param app The NSApplication instance
+     * @param timeoutSeconds Maximum time to wait for events (in seconds)
+     */
+    void process_events(Pointer app, double timeoutSeconds);
+
+    /**
      * Load the native library, extracting it from resources if necessary
      */
     static CocoaJNI loadLibrary() {

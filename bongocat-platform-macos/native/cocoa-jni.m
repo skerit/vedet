@@ -135,7 +135,17 @@ void configure_overlay_window(void *window, int windowLevel) {
  */
 void show_window(void *window) {
     NSWindow *nsWindow = (NSWindow*)window;
+
+    // Activate the application first
+    NSApplication *app = [NSApplication sharedApplication];
+    [app activateIgnoringOtherApps:YES];
+
+    // Make the window key and order it front
     [nsWindow makeKeyAndOrderFront:nil];
+    [nsWindow orderFrontRegardless];
+
+    // Force display
+    [nsWindow display];
 }
 
 /**
@@ -223,6 +233,9 @@ void* render_pixels_to_imageview(
     // Set the image to the image view
     [nsImageView setImage:image];
 
+    // Force the view to redraw
+    [nsImageView setNeedsDisplay:YES];
+
     // Release the image (imageView retains it)
     [image release];
 
@@ -245,5 +258,34 @@ void release_object(void *obj) {
     if (obj) {
         id object = (id)obj;
         [object release];
+    }
+}
+
+/**
+ * Process pending NSApplication events.
+ * This pumps the event loop so windows are actually displayed.
+ *
+ * @param app The NSApplication instance
+ * @param timeoutSeconds Maximum time to wait for events (in seconds)
+ */
+void process_events(void *app, double timeoutSeconds) {
+    NSApplication *nsApp = (NSApplication*)app;
+
+    NSDate *timeout = [NSDate dateWithTimeIntervalSinceNow:timeoutSeconds];
+
+    // Process all pending events
+    while (YES) {
+        NSEvent *event = [nsApp nextEventMatchingMask:NSEventMaskAny
+                                            untilDate:timeout
+                                               inMode:NSDefaultRunLoopMode
+                                              dequeue:YES];
+
+        if (event == nil) {
+            break;  // No more events
+        }
+
+        // Send event to be processed (though we ignore most events)
+        [nsApp sendEvent:event];
+        [nsApp updateWindows];
     }
 }

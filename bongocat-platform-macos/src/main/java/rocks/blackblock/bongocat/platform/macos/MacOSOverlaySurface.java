@@ -33,6 +33,7 @@ public class MacOSOverlaySurface implements OverlaySurface {
     private ByteBuffer pixelBuffer;
     private Layer layer = Layer.OVERLAY;
     private boolean visible = false;
+    private int frameCount = 0;
 
     public MacOSOverlaySurface(MacOSMonitor monitor, Position position, int height)
             throws PlatformException {
@@ -57,21 +58,17 @@ public class MacOSOverlaySurface implements OverlaySurface {
     }
 
     private void createWindow() {
-        // Calculate window position
-        double windowX = monitor.getX();
-        double windowY;
-        if (position == Position.TOP) {
-            windowY = monitor.getY();
-        } else {
-            windowY = monitor.getY() + monitor.getHeight() - height;
-        }
+        // DEBUG: Create a large window in the center of the screen to make it visible
+        double windowX = monitor.getX() + (monitor.getWidth() - width) / 2.0;
+        double windowY = monitor.getY() + (monitor.getHeight() - 500) / 2.0;  // 500px tall, centered
 
         // Use native wrapper to create NSWindow (avoids JNA structure-by-value issue)
+        // DEBUG: Use 500px height instead of configured height to make window obvious
         window = CocoaJNI.INSTANCE.create_nswindow(
             windowX,
             windowY,
             width,
-            height,
+            500,  // DEBUG: Large height
             AppKit.NSWindowStyleMaskBorderless,
             AppKit.NSBackingStoreBuffered,
             false
@@ -155,6 +152,11 @@ public class MacOSOverlaySurface implements OverlaySurface {
     @Override
     public void commit() throws PlatformException {
         try {
+            frameCount++;
+            if (frameCount % 60 == 0) {
+                logger.debug("Rendering frame {} ({}x{})", frameCount, width, height);
+            }
+
             // Reset buffer position for reading
             pixelBuffer.rewind();
 

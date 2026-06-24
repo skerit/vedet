@@ -221,8 +221,8 @@ public class Application {
         try {
             ByteBuffer buffer = surface.getPixelBuffer();
 
-            // Clear to transparent
-            FrameRenderer.clear(buffer, surface.getWidth(), surface.getHeight(), 0x00000000);
+            // DEBUG: Clear to bright yellow background to make window visible
+            FrameRenderer.clear(buffer, surface.getWidth(), surface.getHeight(), 0xFFFFFF00);
 
             // Get current frame
             BufferedImage frame = animationEngine.getCurrentFrame();

@@ -6,6 +6,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import rocks.blackblock.bongocat.platform.*;
 import rocks.blackblock.bongocat.platform.macos.cocoa.AppKit;
+import rocks.blackblock.bongocat.platform.macos.cocoa.CocoaJNI;
 import rocks.blackblock.bongocat.platform.macos.cocoa.CoreGraphics;
 import rocks.blackblock.bongocat.platform.macos.cocoa.ObjC;
 
@@ -37,8 +38,9 @@ public class MacOSDisplayManager implements DisplayManager {
             pool = ObjC.autoreleasePool();
 
             // Initialize NSApplication
+            // DEBUG: Use Regular policy to see if window displays
             nsApp = ObjC.sharedApplication();
-            ObjC.sendVoid(nsApp, "setActivationPolicy:", AppKit.NSApplicationActivationPolicyProhibited);
+            ObjC.sendVoid(nsApp, "setActivationPolicy:", AppKit.NSApplicationActivationPolicyRegular);
 
             // Finish launching NSApplication - this allows window creation
             ObjC.sendVoid(nsApp, "finishLaunching");
@@ -113,16 +115,13 @@ public class MacOSDisplayManager implements DisplayManager {
 
     @Override
     public boolean processEvents(int timeoutMs) throws PlatformException {
-        // TODO: Implement proper event processing using native wrappers
-        // For now, we don't need event processing since our overlay ignores mouse events
-        // and we handle keyboard input separately via MacOSInputMonitor
+        // Process Cocoa events - this is CRITICAL for windows to actually display
         try {
-            if (timeoutMs > 0) {
-                Thread.sleep(timeoutMs);
-            }
+            double timeoutSeconds = timeoutMs / 1000.0;
+            CocoaJNI.INSTANCE.process_events(nsApp, timeoutSeconds);
             return false;
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
+        } catch (Exception e) {
+            logger.warn("Error processing events: {}", e.getMessage());
             return false;
         }
     }
